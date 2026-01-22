@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
 import ContactEmail from "@/emails/ContactEmail";
 import { contactFormSchema } from "@/lib/validations";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const ip = request.headers.get("x-forwarded-for") ||
+               request.headers.get("x-real-ip") ||
+               "unknown";
+    const { allowed, remaining } = checkRateLimit(ip);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "Trop de requêtes. Veuillez réessayer dans une minute." },
+        {
+          status: 429,
+          headers: { "X-RateLimit-Remaining": remaining.toString() }
+        }
+      );
+    }
+
     const body = await request.json();
 
     // Validation des données
@@ -26,7 +43,7 @@ export async function POST(request: Request) {
       .map((email) => email.trim());
 
     // Envoi de l'email
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: "IPROJEX <noreply@hkcom.fr>",
       to: recipients,
       replyTo: validatedData.email,

@@ -39,7 +39,9 @@ export default function ContactForm({ variant = "standalone" }: ContactFormProps
         body: JSON.stringify(data),
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (result.success) {
         setSubmitStatus("success");
         reset();
       } else {

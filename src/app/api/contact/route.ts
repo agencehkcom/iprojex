@@ -1,56 +1,59 @@
 import { NextResponse } from "next/server";
-import { getResend } from "@/lib/resend";
-import { contactFormSchema } from "@/lib/validations";
+import { resend } from "@/lib/resend";
 import ContactEmail from "@/emails/ContactEmail";
+import { contactFormSchema } from "@/lib/validations";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Validate the request body
-    const validatedData = contactFormSchema.safeParse(body);
+    // Validation des données
+    const validatedData = contactFormSchema.parse(body);
 
-    if (!validatedData.success) {
-      return NextResponse.json(
-        { error: "Données invalides", details: validatedData.error.flatten() },
-        { status: 400 }
-      );
-    }
+    // Formatage de la date
+    const dateFormatted = new Date().toLocaleDateString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
-    const { name, company, email, phone, message } = validatedData.data;
+    // Liste des destinataires
+    const recipients = (process.env.CONTACT_EMAILS || "contact@iprojex.fr")
+      .split(",")
+      .map((email) => email.trim());
 
-    // Send email via Resend
-    const resend = getResend();
+    // Envoi de l'email
     const { error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "IPROJEX <onboarding@resend.dev>",
-      to: process.env.CONTACT_EMAIL || "contact@iprojex-flocage.fr",
-      replyTo: email,
-      subject: `Nouvelle demande de devis - ${name}`,
+      from: "IPROJEX <noreply@hkcom.fr>",
+      to: recipients,
+      replyTo: validatedData.email,
+      subject: `Nouvelle demande de devis - ${validatedData.name}${validatedData.company ? ` (${validatedData.company})` : ""}`,
       react: ContactEmail({
-        name,
-        company,
-        email,
-        phone,
-        message,
+        name: validatedData.name,
+        email: validatedData.email,
+        phone: validatedData.phone,
+        company: validatedData.company,
+        message: validatedData.message,
+        date: dateFormatted,
       }),
     });
 
     if (error) {
       console.error("Resend error:", error);
       return NextResponse.json(
-        { error: "Erreur lors de l'envoi de l'email" },
+        { success: false, error: "Erreur lors de l'envoi de l'email" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(
-      { success: true, message: "Demande envoyée avec succès" },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("API error:", error);
     return NextResponse.json(
-      { error: "Une erreur est survenue" },
+      { success: false, error: "Une erreur est survenue" },
       { status: 500 }
     );
   }

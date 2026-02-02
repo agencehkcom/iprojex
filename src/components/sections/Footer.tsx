@@ -22,8 +22,8 @@ export default function Footer() {
               <div>
                 <h4 className="text-white font-semibold mb-1">Adresse</h4>
                 <p className="text-gray-400 text-sm">
-                  82, rue Maurice Berteaux<br />
-                  95360 Montmagny
+                  3 rue Magnier Bedu<br />
+                  95410 Groslay
                 </p>
               </div>
             </div>
@@ -72,13 +72,13 @@ export default function Footer() {
           {/* Links */}
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             <a
-              href="#"
+              href="/mentions-legales"
               className="text-gray-400 hover:text-white transition-colors"
             >
               Mentions légales
             </a>
             <a
-              href="#"
+              href="/mentions-legales"
               className="text-gray-400 hover:text-white transition-colors"
             >
               Politique de confidentialité
